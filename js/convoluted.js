@@ -40,6 +40,13 @@ biasEl.addEventListener('change', function() {
   bias = parseFloat(this.value);
 });
 
+kernEl.addEventListener('submit', function(event) {
+  console.log('submit!');
+  event.preventDefault();
+  event.stopPropagation();
+  return false;
+});
+
 var preset = 'laplacianOfGaussian5X5';
 var kernel = presets[preset].kernel;
 presetEl.value = preset;
@@ -66,11 +73,9 @@ var kernelHTML = function() {
       input.step = 'any';
       input.value = kernel[y] ? (kernel[y][x] ? kernel[y][x] : 0) : 0;
       fs.appendChild(input)
-
     }
     
     kernelMatrixEl.appendChild(fs);
-    
   }
 };
 
@@ -122,21 +127,7 @@ presetEl.addEventListener('change', function() {
 
 });
 
-var identity = [
-  [ 0, 0, 0, 0, 0 ],
-  [ 0, 0, 0, 0, 0 ],
-  [ 0, 0, 1, 0, 0 ],
-  [ 0, 0, 0, 0, 0 ],
-  [ 0, 0, 0, 0, 0 ]
-];
-
 var kernels = [kernel];
-
-addKernEl.addEventListener('change', function() {
-  console.log('add kernel!');
-  kernel = identity;
-  kernels.push(kernel);
-});
 
 kernEl.addEventListener('change', function() {
   console.log('kernel change');
@@ -188,6 +179,7 @@ video.addEventListener('canplay', function(event) {
 
 var box = [0, 0];
 
+/*
 outCanvas.addEventListener('mousemove', function(event) {
 
   var rect = outCanvas.getBoundingClientRect();
@@ -195,14 +187,13 @@ outCanvas.addEventListener('mousemove', function(event) {
   var x = event.clientX - rect.left;
   var y = event.clientY - rect.top;
 
-  //console.log('mouse over', x, y, rect);
-
   x = x * outCanvas.width / rect.width;
   y = y * outCanvas.height / rect.height;
 
   box = [x, y];
 
 });
+*/
 
 video.addEventListener('play', function() {
   console.log('play', video.videoWidth, video.videoHeight);
@@ -222,8 +213,8 @@ video.addEventListener('play', function() {
     var imageData = inCtx.getImageData(0, 0, canvasWidth, canvasHeight);
     var data = imageData.data;
 
-    //B&W
     /*
+    //B&W
     for(var i = 0; i < data.length; i += 4) {
       var brightness = 0.34 * data[i] + 0.5 * data[i + 1] + 0.16 * data[i + 2];
       // red
@@ -234,7 +225,7 @@ video.addEventListener('play', function() {
       data[i + 2] = brightness;
     }
     */
-
+    
     var f = new Filter(kernel);
     f.width(canvasWidth);
     f.height(canvasHeight);
@@ -244,18 +235,9 @@ video.addEventListener('play', function() {
     var out = inCtx.createImageData(canvasWidth, canvasHeight);
     f.apply(imageData, out);
 
-    //outCtx.clearRect(0, 0, canvasWidth, canvasHeight);
-    //outCtx.stroke();
-    //outCtx.clear();
-    //outCtx.clearRect(0, 0, outCanvas.width, outCanvas.height);
-    
     outCtx.putImageData(out, 0, 0);
-    //outCtx.fillStyle = 'red';
-    //outCtx.fillRect(box[0], box[1], X, Y);
     
-    boxData = inCtx.getImageData(parseInt(box[0]), parseInt(box[1]), X, Y).data;
-    //console.log(box[0], box[1], X, Y);
-    //console.log(boxData.length);
+    //boxData = inCtx.getImageData(parseInt(box[0]), parseInt(box[1]), X, Y).data;
 
     /*
     var inputs = kernEl.querySelectorAll('fieldset input');
