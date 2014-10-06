@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>convoluted</title>
+  <link href='http://fonts.googleapis.com/css?family=Share+Tech+Mono' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <canvas id="input"></canvas>
+  <canvas id="output"></canvas>
+
+  <a id="enable-cam" href="#">Webcam</a>
+
+  <form id="kernel">
+    <div>
+      <label for="presets">Presets: </label>
+      <select id="presets"></select>
+    </div>
+    <div>
+      <label for="factor">Factor:</label>
+      <input id="factor" type="number" value="1"></input>
+    </div>
+    <div>
+      <label for="bias">Bias:</label>
+      <input id="bias" type="number" value="0"></input>
+      <button id="add-kernel">Add</button>
+    </div>
+
+    <div id="kernel-size">
+      <label>Kernel size: </label>
+      <input id="kernel-x" class="kernel-size" type="number" value="5" step="2" min="3" max="15">
+      X
+      <input id="kernel-y" class="kernel-size" type="number" value="5" step="2" min="3" max="15">
+    </div>
+
+    <div>
+      <label>Kernel:</label>
+      
+      <div id="kernel-matrix">
+        
+      </div>
+    </div>
+
+  </form>
+
+  <video></video>
+
+  <div id="fps"></div>
+  <script src="js/presets.js"></script>
+  <script src="js/filter.js"></script>
+  <script src="js/convoluted.js"></script>
+</body>
+</html>
