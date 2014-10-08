@@ -31,34 +31,56 @@ Object.keys(presets).forEach(function(preset) {
 });
 
 factorEl.addEventListener('change', function() {
-  console.log('factor change', this.value);
-  factor = parseFloat(this.value);
+  updateKernel({ factor: parseFloat(this.value) });
 });
 
 biasEl.addEventListener('change', function() {
-  console.log('bias change', this.value);
-  bias = parseFloat(this.value);
+  updateKernel({ bias: parseFloat(this.value) });
 });
 
 kernEl.addEventListener('submit', function(event) {
-  console.log('submit!');
   event.preventDefault();
   event.stopPropagation();
   return false;
 });
 
 var preset = 'laplacianOfGaussian5X5';
-var kernel = presets[preset].kernel;
+var kernel = presets[preset];
 presetEl.value = preset;
 
-var X = 5;
-var Y = 5;
+if(window.location.hash) {
+  try {
+    kernel = JSON.parse(window.location.hash.slice(2));
+  } catch(err) {
+    console.error(err);
+  }
+}
 
-var kernelHTML = function() {
+var kernelKeys = [
+  "filter",
+  "factor",
+  "bias"
+];
+
+var updateKernel = function(opts, updateDOM) {
   var rows = kernEl.querySelectorAll('fieldset');
+  kernelKeys.forEach(function(key) {
+    if(opts[key] !== undefined) {
+      kernel[key] = opts[key];
+    }
+  });
 
-  kernelXel.value = X;
-  kernelYel.value = Y;
+  var filter = kernel.filter;
+  var X = kernelXel.value = filter[0].length;
+  var Y = kernelYel.value = filter.length;
+  factorEl.value = kernel.factor;
+  biasEl.value = kernel.bias;
+
+  window.location.hash = '#!' + JSON.stringify(kernel);
+
+  if(!updateDOM) {
+    return;
+  }
 
   for (var i = 0; i < rows.length; i++) {
     rows[i].remove();
@@ -71,7 +93,7 @@ var kernelHTML = function() {
       var input = document.createElement('input');
       input.type = 'number';
       input.step = 'any';
-      input.value = kernel[y] ? (kernel[y][x] ? kernel[y][x] : 0) : 0;
+      input.value = filter[y] ? (filter[y][x] ? filter[y][x] : 0) : 0;
       fs.appendChild(input)
     }
     
@@ -79,72 +101,64 @@ var kernelHTML = function() {
   }
 };
 
-kernelHTML();
+updateKernel(kernel, true);
 
 kernelXel.addEventListener('change', function() {
   X = parseInt(this.value);
-  console.log('kernel size change', X, Y);
-  kernelHTML();
+  var filter = kernel.filter;
+  var diff = filter[0].length - X;
+
+  filter.forEach(function(row, i) {
+    if(diff > 0) {
+      row = row.slice(diff / 2, row.length - diff/2);
+    } else {
+      var a = new Array(-diff/2).map(function() { return 0; });
+      row = a.concat(row).concat(a);
+    }
+    filter[i] = row;
+  });
+  
+  updateKernel({ filter: filter }, true);
 });
 
 kernelYel.addEventListener('change', function() {
-  Y = parseInt(this.value);
-  console.log('kernel size change', X, Y);
-  kernelHTML();
+  var Y = parseInt(this.value);
+  var filter = kernel.filter;
+  var diff = filter.length - Y;
+  var a = Array.apply(null, new Array(filter[0].length)).map(Number.prototype.valueOf,0);
+
+  if(diff > 0) {
+    filter = filter.slice(diff / 2, filter.length - diff/2);
+  } else {
+    for(var i=0; i < -diff / 2; i++) {
+      filter = [a].concat(filter);
+      filter.push(a);
+    }
+  }
+
+  updateKernel({ filter: filter }, true);
 });
 
 presetEl.addEventListener('change', function() {
-  kernel = presets[
+  updateKernel(presets[
     presetEl.options[presetEl.selectedIndex].value
-  ];
-
-  factor = 1;
-  bias = 0;
-
-  if (!(kernel instanceof Array)) {
-    console.log("yeah! object!");
-    factor = kernel.factor || 1;
-    bias = kernel.bias || 0;
-    kernel = kernel.kernel;
-  }
-
-  factorEl.value = factor;
-  biasEl.value = bias;
-
-  X = kernel[0].length;
-  Y = kernel.length;
-  kernelHTML();
-
-  var rows = kernEl.getElementsByTagName('fieldset');
-  //var inputs = kernEl.getElementsByTagName('input');
-
-  for(var i=0; i < rows.length; i++) {
-    var inputs = rows[i].children;
-    for(var j=0; j < inputs.length; j++) {
-      inputs[j].value = kernel[i][j];
-    }
-  }
-
+  ], true);
 });
 
-var kernels = [kernel];
-
 kernEl.addEventListener('change', function() {
-  console.log('kernel change');
-
   var rows = kernEl.querySelectorAll('fieldset');
-  kernel = [];
+  var filter = [];
 
   for(var i=0; i < rows.length; i++) {
-    kernel[i] = [];
+    filter[i] = [];
     var inputs = rows[i].children;
     for(var j=0; j < inputs.length; j++) {
-      kernel[i].push(parseFloat(inputs[j].value));
+      filter[i].push(parseFloat(inputs[j].value));
     }
   }
 
-  kernels[kernels.length - 1] = kernel;
-  console.log(kernel);
+  updateKernel({ filter: filter });
+
 });
 
 var canvasWidth = 160;
@@ -162,20 +176,14 @@ var canvasHeight = 120;
 //});
   
 video.addEventListener('canplay', function(event) {
-  console.log('canplay', event);
   aspectRatio = video.videoWidth / video.videoHeight;
-  console.log('video w/h', video.videoWidth, video.videoHeight);
-  console.log(video);
   inCanvas.width = outCanvas.width = canvasWidth = video.videoWidth;// / 4;
   inCanvas.height = outCanvas.height = canvasHeight = video.videoHeight;// / 4;
-  console.log('canvasWidth', canvasWidth, outCanvas.width);
-  console.log('canvasHeigt', canvasHeight, outCanvas.height);
   //mirror the video
   inCtx.translate(canvasWidth, 0);
   inCtx.scale(-1, 1);
   video.play();
 });
-
 
 var box = [0, 0];
 
@@ -196,10 +204,8 @@ outCanvas.addEventListener('mousemove', function(event) {
 */
 
 video.addEventListener('play', function() {
-  console.log('play', video.videoWidth, video.videoHeight);
   var animate = function() {
     if (video.paused || video.ended) return;
-    //console.log(video);
     inCtx.fillRect(0, 0, canvasWidth, canvasHeight);
     try {
       inCtx.drawImage(video, 0, 0, canvasWidth, canvasHeight);
@@ -226,11 +232,11 @@ video.addEventListener('play', function() {
     }
     */
     
-    var f = new Filter(kernel);
+    var f = new Filter(kernel.filter);
     f.width(canvasWidth);
     f.height(canvasHeight);
-    f.factor(factor);
-    f.bias(bias);
+    f.factor(kernel.factor);
+    f.bias(kernel.bias);
 
     var out = inCtx.createImageData(canvasWidth, canvasHeight);
     f.apply(imageData, out);
