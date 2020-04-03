@@ -168,7 +168,8 @@ var canvasHeight = 120;
 //  event.preventDefault();
   navigator.getUserMedia({ video: true, audio: false }, function(stream) {
     var url = window.URL || window.webkitURL;
-    video.src = url ? url.createObjectURL(stream) : stream;
+    //video.src = url ? url.createObjectURL(stream) : stream;
+    video.srcObject = stream;
     //video.play();
   }, function(err) {
     console.log('error with stream!', err);
